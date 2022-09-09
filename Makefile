@@ -2,6 +2,7 @@ all:
 
 rsync:
 	rsync -avP \
+	--exclude dist \
 	--exclude node_modules \
 	* boris@cloudbase.gir.me.uk:~/protohackers/
 
