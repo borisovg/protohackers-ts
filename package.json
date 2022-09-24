@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "workspaces": [
+    "01",
+    "02",
+    "03"
+  ]
+}
