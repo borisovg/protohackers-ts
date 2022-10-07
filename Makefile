@@ -10,6 +10,7 @@ run:
 	cd $(DIR) && docker run \
 		--init \
 		-it \
-		-p 10123:10123 \
+		-p 10123:10123/tcp \
+		-p 10123:10123/udp \
 		--rm \
 		$$(docker build -q .); exit 0
