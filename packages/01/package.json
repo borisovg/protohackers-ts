@@ -1,9 +1,9 @@
 {
-  "name": "protohackers-03b",
+  "name": "protohackers-01",
   "version": "1.0.0",
   "private": true,
   "devDependencies": {
-    "@types/node": "^16",
+    "@types/node": "^18",
     "typescript": "^4"
   }
 }
