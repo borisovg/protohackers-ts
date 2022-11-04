@@ -3,7 +3,7 @@ import { logger as log } from './logger';
 
 type SubscriberFn = (buf: Buffer) => Buffer | void;
 
-const emptyBuffer = Buffer.from('');
+const emptyBuffer = Buffer.alloc(0);
 
 export class StreamReader {
   private buffer = emptyBuffer;

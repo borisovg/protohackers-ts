@@ -10,6 +10,7 @@ import {
 import { codes, makeHeartbeat, Parser } from './parser';
 
 export const port = 10123;
+const hbMsg = makeHeartbeat();
 let id = 0;
 
 createServer(async (socket: Socket & { _id?: string }) => {
@@ -54,7 +55,7 @@ createServer(async (socket: Socket & { _id?: string }) => {
       if (hbInterval) {
         timer = setInterval(() => {
           log.info(socket._id, 'send heartbeat');
-          socket.write(makeHeartbeat());
+          socket.write(hbMsg);
         }, hbInterval * 100);
       }
     } else {
