@@ -2,6 +2,8 @@ all:
 
 rsync:
 	rsync -avP \
+	--delete \
+	--exclude coverage \
 	--exclude dist \
 	--exclude node_modules \
 	* boris@cloudbase.gir.me.uk:~/protohackers/
