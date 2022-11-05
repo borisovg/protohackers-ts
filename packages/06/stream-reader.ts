@@ -5,6 +5,12 @@ type SubscriberFn = (buf: Buffer) => Buffer | void;
 
 const emptyBuffer = Buffer.alloc(0);
 
+export const bytes = {
+  u8: 1,
+  u16: 2,
+  u32: 4,
+} as const;
+
 export class StreamReader {
   private buffer = emptyBuffer;
 
@@ -59,6 +65,21 @@ export class StreamReader {
     });
   }
 
+  async readU8() {
+    const buf = await this.readBytes(bytes.u8);
+    return buf.readUInt8();
+  }
+
+  async readU16() {
+    const buf = await this.readBytes(bytes.u16);
+    return buf.readUInt16BE();
+  }
+
+  async readU32() {
+    const buf = await this.readBytes(bytes.u32);
+    return buf.readUInt32BE();
+  }
+
   private handleData(buffer: Buffer) {
     if (this.subscriber) {
       const remainder = this.subscriber(buffer);
@@ -86,25 +107,20 @@ export class StreamReader {
   }
 }
 
-export function makeString(str: string) {
-  const buf = Buffer.from(str);
-  return Buffer.concat([Buffer.from([buf.length]), buf]);
-}
-
 export function makeU8(num: number) {
-  const buf = Buffer.allocUnsafe(1);
+  const buf = Buffer.allocUnsafe(bytes.u8);
   buf.writeUInt8(num);
   return buf;
 }
 
 export function makeU16(num: number) {
-  const buf = Buffer.allocUnsafe(2);
+  const buf = Buffer.allocUnsafe(bytes.u16);
   buf.writeUInt16BE(num);
   return buf;
 }
 
 export function makeU32(num: number) {
-  const buf = Buffer.allocUnsafe(4);
+  const buf = Buffer.allocUnsafe(bytes.u32);
   buf.writeUInt32BE(num);
   return buf;
 }

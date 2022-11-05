@@ -1,10 +1,4 @@
-import {
-  makeString,
-  makeU16,
-  makeU32,
-  makeU8,
-  StreamReader,
-} from './stream-reader';
+import { bytes, makeU16, makeU32, makeU8, StreamReader } from './stream-reader';
 
 export type IAmCamera = Awaited<ReturnType<Parser['readIAmCamera']>>;
 export type IAmDispatcher = Awaited<ReturnType<Parser['readIAmDispatcher']>>;
@@ -22,21 +16,21 @@ export const codes = {
 
 export class Parser extends StreamReader {
   async readIAmCamera() {
-    const buf = await this.readBytes(6);
+    const buf = await this.readBytes(bytes.u16 * 3);
     return {
       road: buf.readUInt16BE(),
-      mile: buf.readUInt16BE(2),
-      limit: buf.readUInt16BE(4),
+      mile: buf.readUInt16BE(bytes.u16),
+      limit: buf.readUInt16BE(bytes.u16 * 2),
     };
   }
 
   async readIAmDispatcher() {
     const num = await this.readU8();
-    const buf = await this.readBytes(2 * num);
+    const buf = await this.readBytes(bytes.u16 * num);
     const roads = new Array(num);
 
     for (let i = 0; i < num; i += 1) {
-      roads[i] = buf.readUInt16BE(2 * i);
+      roads[i] = buf.readUInt16BE(bytes.u16 * i);
     }
 
     return { roads };
@@ -57,21 +51,6 @@ export class Parser extends StreamReader {
     const len = await this.readU8();
     const buf = await this.readBytes(len);
     return buf.toString();
-  }
-
-  async readU8() {
-    const buf = await this.readBytes(1);
-    return buf.readUInt8();
-  }
-
-  async readU16() {
-    const buf = await this.readBytes(2);
-    return buf.readUInt16BE();
-  }
-
-  async readU32() {
-    const buf = await this.readBytes(4);
-    return buf.readUInt32BE();
   }
 }
 
@@ -102,4 +81,9 @@ export function makeTicket(
     makeU32(timestamp2),
     makeU16(speed),
   ]);
+}
+
+export function makeString(str: string) {
+  const buf = Buffer.from(str);
+  return Buffer.concat([Buffer.from([buf.length]), buf]);
 }
