@@ -3,7 +3,7 @@ import { logger as log } from './logger';
 import { makeError, makeTicket } from './parser';
 import type { IAmCamera, IAmDispatcher, Plate } from './parser';
 
-type RecordMeta = Plate & IAmCamera;
+type RecordMeta = Plate & IAmCamera & { day: number };
 type SocketWithId = Writable & { _id?: string };
 
 const cameraMeta: Map<SocketWithId, IAmCamera> = new Map();
@@ -119,8 +119,15 @@ export function handlePlate(msg: Plate, socket: SocketWithId) {
 
   const { plate, timestamp } = msg;
   const { limit, mile, road } = cMeta;
+  const day = Math.floor(timestamp / 86400);
+
+  if (sentTickets.get(plate)?.has(day)) {
+    log.info('ticket limit reached for', plate, day);
+    return;
+  }
 
   const list = (recordsByPlate.get(plate) || []).slice(-1).concat({
+    day,
     limit,
     mile,
     plate,
@@ -141,20 +148,12 @@ export function handlePlate(msg: Plate, socket: SocketWithId) {
     Math.abs(r2.mile - r1.mile) / ((r2.timestamp - r1.timestamp) / 3600);
 
   if (speed > r1.limit + 0.5) {
+    recordsByPlate.delete(plate);
     sendTicket(r1, r2, speed);
   }
 }
 
 function sendTicket(r1: RecordMeta, r2: RecordMeta, speed: number) {
-  const day1 = Math.floor(r1.timestamp / 86400);
-  const day2 = Math.floor(r2.timestamp / 86400);
-  let tickets = sentTickets.get(r1.plate);
-
-  if (tickets?.has(day1) || tickets?.has(day2)) {
-    log.info('ticket limit reached for', r1.plate, day1, day2);
-    return;
-  }
-
   const socket = (dispatchersByRoad.get(r1.road) || [])[0];
 
   if (socket) {
@@ -170,15 +169,25 @@ function sendTicket(r1: RecordMeta, r2: RecordMeta, speed: number) {
       )
     );
 
-    log.info(socket._id, 'ticket issued', r1.plate, r1.road, speed);
+    log.info(
+      socket._id,
+      'ticket issued',
+      r1.plate,
+      r1.road,
+      speed,
+      r1.day,
+      r2.day
+    );
+
+    let tickets = sentTickets.get(r1.plate);
 
     if (!tickets) {
       tickets = new Set();
       sentTickets.set(r1.plate, tickets);
     }
 
-    tickets.add(day1);
-    tickets.add(day2);
+    tickets.add(r1.day);
+    tickets.add(r2.day);
   } else {
     let list = ticketCache.get(r1.road);
 

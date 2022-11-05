@@ -17,7 +17,7 @@ createServer(async (socket: Socket & { _id?: string }) => {
   socket._id = `id-${++id}`;
   log.info(socket._id, 'client connected');
 
-  const parser = new Parser(socket);
+  const parser = new Parser(socket._id, socket);
   let hbInterval = -1;
   let timer: NodeJS.Timer;
 
@@ -54,7 +54,6 @@ createServer(async (socket: Socket & { _id?: string }) => {
 
       if (hbInterval) {
         timer = setInterval(() => {
-          log.info(socket._id, 'send heartbeat');
           socket.write(hbMsg);
         }, hbInterval * 100);
       }

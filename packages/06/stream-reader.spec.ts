@@ -6,7 +6,7 @@ import { StreamReader } from './stream-reader';
 describe('StreamReader.readBytes()', () => {
   it('returns next line in the string', async () => {
     const data = Buffer.from('foobaarbaaaz');
-    const reader = new StreamReader(makeStream(data));
+    const reader = new StreamReader('test', makeStream(data));
 
     for (const val of ['foo', 'baar', 'baaaz']) {
       const res = await reader.readBytes(val.length);
@@ -18,7 +18,7 @@ describe('StreamReader.readBytes()', () => {
 describe('StreamReader.readLine()', () => {
   it('returns next line in the string', async () => {
     const data = Buffer.from('foo\nbar\nbaz\n');
-    const reader = new StreamReader(makeStream(data));
+    const reader = new StreamReader('test', makeStream(data));
 
     for (const val of ['foo', 'bar', 'baz']) {
       const res = await reader.readLine();
@@ -28,7 +28,7 @@ describe('StreamReader.readLine()', () => {
 
   it('returns next line in the string with custom line terminator', async () => {
     const data = Buffer.from('foo#bar#');
-    const reader = new StreamReader(makeStream(data));
+    const reader = new StreamReader('test', makeStream(data));
 
     for (const val of ['foo', 'bar']) {
       const res = await reader.readLine('#');
@@ -40,7 +40,10 @@ describe('StreamReader.readLine()', () => {
 describe('StreamReader miscellaneous', () => {
   it('correctly pauses and resumes the stream', (done) => {
     const data = ['foo', 'bar', 'baz', 'foo', 'bar', ''];
-    const reader = new StreamReader(makeStream(Buffer.from(data.join('\n'))));
+    const reader = new StreamReader(
+      'test',
+      makeStream(Buffer.from(data.join('\n')))
+    );
 
     (function loop(i) {
       const val = data[i];
@@ -58,7 +61,7 @@ describe('StreamReader miscellaneous', () => {
 
   it('allows only one request at a time', () => {
     const data = Buffer.from('foo\nbar\nbaz\n');
-    const reader = new StreamReader(makeStream(data));
+    const reader = new StreamReader('test', makeStream(data));
 
     rejects(Promise.all([reader.readLine(), reader.readBytes(1)]), {
       message: 'Duplicate subscription',

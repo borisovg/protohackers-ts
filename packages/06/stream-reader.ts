@@ -10,9 +10,9 @@ export class StreamReader {
 
   private subscriber?: SubscriberFn;
 
-  constructor(private stream: Readable & { _id?: string }) {
+  constructor(private id: string, private stream: Readable) {
     stream.on('data', (chunk: Buffer) => {
-      log.debug(stream._id, 'data', chunk.toString('hex'));
+      log.debug(id, 'data', chunk.toString('hex'));
       const buffer = Buffer.concat([this.buffer, chunk]);
       this.handleData(buffer);
     });
