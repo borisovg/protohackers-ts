@@ -43,21 +43,29 @@ export class PriorityQueue<T extends { id: number; priority: number }> {
   }
 
   private heapifyDown(idx: number) {
-    const l = 2 * idx + 1;
-    const r = l + 1;
-    const lc = this.queue[l];
-    const rc = this.queue[r];
+    while (idx < this.queue.length) {
+      const l = 2 * idx + 1;
+      const lc = this.queue[l];
+      const r = 2 * idx + 2;
+      const rc = this.queue[r];
+      let max = idx;
 
-    if (lc && lc.priority > (this.queue[idx] as T).priority) {
-      this.queue[l] = this.queue[idx];
-      this.queue[idx] = lc;
-      this.heapifyDown(l);
-    }
+      if (lc && lc.priority > (this.queue[idx] as T).priority) {
+        max = l;
+      }
 
-    if (rc && rc.priority > (this.queue[idx] as T).priority) {
-      this.queue[r] = this.queue[idx];
-      this.queue[idx] = rc;
-      this.heapifyDown(r);
+      if (rc && rc.priority > (this.queue[max] as T).priority) {
+        max = r;
+      }
+
+      if (idx !== max) {
+        const tmp = this.queue[idx];
+        this.queue[idx] = this.queue[max];
+        this.queue[max] = tmp;
+        idx = max;
+      } else {
+        break;
+      }
     }
   }
 
