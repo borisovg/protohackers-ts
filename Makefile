@@ -15,4 +15,4 @@ run:
 		-p 10123:10123/tcp \
 		-p 10123:10123/udp \
 		--rm \
-		$$(docker build -q .); exit 0
+		$$(docker build -q -t "protohackers-$(DIR)" .); exit 0
