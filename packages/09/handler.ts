@@ -41,7 +41,7 @@ export class Handler extends Transform {
   _transform(buf: Buffer, _enc: string, callback: () => void) {
     let res;
 
-    // log(clientId, 'REQUEST', buf.toString().trim());
+    //log(this.clientId, 'REQUEST', buf.toString().trim());
 
     try {
       const req = getMessage(buf);
@@ -51,10 +51,10 @@ export class Handler extends Transform {
       } else if (req.request === 'delete') {
         res = { status: remove(req.id) ? 'ok' : 'no-job' };
       } else if (req.request === 'get') {
-        const job = get(req.queues);
+        const job = get(this.clientId, req.queues);
 
         if (!job && req.wait) {
-          return addWatcher(req.queues, (job) => {
+          return addWatcher(this.clientId, req.queues, (job) => {
             this.sendResponse(this.makeGetResponse(job));
           });
         }
@@ -66,6 +66,7 @@ export class Handler extends Transform {
       }
     } catch (err) {
       const err2 = err as Error;
+      log('ERROR', err2.stack);
       res = { status: 'error', error: err2.message };
     }
 
@@ -91,7 +92,7 @@ export class Handler extends Transform {
 
   sendResponse(res: unknown) {
     this.push(Buffer.from(JSON.stringify(res) + '\n'));
-    // log(clientId, 'RESPONSE', JSON.stringify(res));
+    //log(this.clientId, 'RESPONSE', JSON.stringify(res));
   }
 }
 

@@ -1,19 +1,19 @@
 import { Job } from './job';
+import { PriorityQueue } from './priority-queue';
 
 type WatcherFn = (job: Job) => void;
 
-const queues: Map<string, Map<number, Job>> = new Map();
-const watchers: Map<WatcherFn, string[]> = new Map();
+const inProgress: Map<number, Job> = new Map();
+const queues: Map<string, PriorityQueue<Job>> = new Map();
+const watchers: Map<WatcherFn, [number, string[]]> = new Map();
 
 export function abort(clientId: number, jobId: number) {
-  for (const queue of queues.values()) {
-    const job = queue.get(jobId);
+  const job = inProgress.get(jobId);
 
-    if (!job) {
-      continue;
-    } else if (job.clientId == clientId) {
-      job.clientId = 0;
-      notifyWatcher(job);
+  if (job) {
+    if (job.clientId == clientId) {
+      inProgress.delete(job.id);
+      put(job.queue, job.priority, job.data);
       return true;
     } else {
       throw new Error('Forbidden');
@@ -22,49 +22,66 @@ export function abort(clientId: number, jobId: number) {
 }
 
 export function abortAll(clientId: number) {
-  for (const queue of queues.values()) {
-    for (const job of queue.values()) {
-      if (job.clientId === clientId) {
-        job.clientId = 0;
-        notifyWatcher(job);
-      }
+  for (const [id, job] of inProgress) {
+    if (job.clientId === clientId) {
+      inProgress.delete(job.id);
+      put(job.queue, job.priority, job.data);
     }
   }
 }
 
-export function addWatcher(queueNames: string[], callback: WatcherFn) {
-  watchers.set(callback, queueNames);
+export function addWatcher(
+  clientId: number,
+  queueNames: string[],
+  callback: WatcherFn
+) {
+  watchers.set(callback, [clientId, queueNames]);
 }
 
-export function get(queueNames: string[]) {
-  let nextJob;
+export function get(clientId: number, queueNames: string[]) {
+  let selectedQueue;
+  let selectedPriority = 0;
 
   for (const name of queueNames) {
     const queue = queues.get(name);
 
-    if (!queue) {
-      continue;
-    }
+    if (queue) {
+      let priority = queue.maxPriority;
 
-    for (const job of queue.values()) {
-      if (job.clientId) {
-        continue;
-      } else if (!nextJob || job.priority > nextJob.priority) {
-        nextJob = job;
+      if (priority > selectedPriority) {
+        selectedQueue = queue;
+        selectedPriority = priority;
       }
     }
   }
 
-  return nextJob;
+  if (selectedQueue) {
+    const job = selectedQueue.shift() as Job;
+
+    job.clientId = clientId;
+    inProgress.set(job.id, job);
+
+    if (!selectedQueue.size) {
+      queues.delete(job.queue);
+    }
+
+    return job;
+  }
 }
 
 export function remove(id: number) {
+  let job = inProgress.get(id);
+
+  if (job) {
+    inProgress.delete(id);
+    return true;
+  }
+
   for (const [name, queue] of queues) {
     if (queue.delete(id)) {
       if (!queue.size) {
         queues.delete(name);
       }
-
       return true;
     }
   }
@@ -76,22 +93,21 @@ export function put(queueName: string, priority: number, data: unknown) {
   let queue = queues.get(queueName);
 
   if (!queue) {
-    queue = new Map();
+    queue = new PriorityQueue();
     queues.set(queueName, queue);
   }
 
-  queue.set(job.id, job);
-  notifyWatcher(job);
+  queue.push(job);
+  notifyWatcher(job.queue);
 
   return job.id;
 }
 
-function notifyWatcher(job: Job) {
-  for (const [fn, queueNames] of watchers) {
-    if (queueNames.includes(job.queue)) {
+function notifyWatcher(queueName: string) {
+  for (const [fn, [clientId, queueNames]] of watchers) {
+    if (queueNames.includes(queueName)) {
       watchers.delete(fn);
-      fn(job);
-      break;
+      return fn(queues.get(queueName)?.shift() as Job);
     }
   }
 }
