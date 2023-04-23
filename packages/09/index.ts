@@ -1,4 +1,4 @@
-import { connect, createServer } from 'node:net';
+import { createServer } from 'node:net';
 import { Handler } from './handler';
 import { log } from './logger';
 import { NewLineSplitter } from './new-line-splitter';
@@ -15,7 +15,7 @@ createServer((socket) => {
       log(clientId, 'CLOSE');
     })
     .on('error', (err) => {
-      log(clientId, 'SOCKET ERROR', clientId, err.message);
+      log(clientId, 'SOCKET ERROR', err.message);
     })
     .pipe(new NewLineSplitter())
     .pipe(new Handler(clientId))
